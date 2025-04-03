@@ -4,10 +4,13 @@ The debian repository is served by GitHub Pages at [https://mrtnmtth.github.io/d
 
 ## Usage
 
-Add the repository to your `sources.list` file:
+Add the repository to your `sources.list.d` directory:
 
 ```bash
-echo "deb [trusted=yes] https://mrtnmtth.github.io/debian/repo /" > /etc/apt/sources.list
+echo "Types: deb
+URIs: https://mrtnmtth.github.io/debian/repo/
+Suites: /
+Trusted: yes" | sudo tee /etc/apt/sources.list.d/mmtth.sources
 ```
 
 ## Adding packages to the repository
