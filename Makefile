@@ -10,6 +10,7 @@ repo:
 	mkdir -p $(REPO_DIR)
 	cp $(DEBS_DIR)/*.deb $(REPO_DIR)/
 	cp $(DL_DIR)/*.deb $(REPO_DIR)/
+	./scripts/rename.sh $(REPO_DIR)
 	cd $(REPO_DIR) && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
 
 download:
