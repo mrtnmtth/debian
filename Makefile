@@ -11,7 +11,7 @@ repo:
 	cp $(DEBS_DIR)/*.deb $(REPO_DIR)/
 	cp $(DL_DIR)/*.deb $(REPO_DIR)/
 	./scripts/rename.sh $(REPO_DIR)
-	cd $(REPO_DIR) && dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
+	cd $(REPO_DIR) && dpkg-scanpackages --multiversion . /dev/null | gzip -9c > Packages.gz
 
 download:
 	mkdir -p $(DL_DIR)
