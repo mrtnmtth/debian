@@ -1,4 +1,5 @@
-https://github.com/obsidianmd/obsidian-releases/releases/download/v1.8.9/obsidian_1.8.9_amd64.deb
-https://github.com/derailed/k9s/releases/download/v0.40.10/k9s_linux_amd64.deb
+https://github.com/derailed/k9s/releases/download/v0.50.6/k9s_linux_amd64.deb
+https://github.com/getsops/sops/releases/download/v3.10.1/sops_3.10.1_amd64.deb
 https://github.com/getsops/sops/releases/download/v3.9.4/sops_3.9.4_amd64.deb
+https://github.com/obsidianmd/obsidian-releases/releases/download/v1.8.9/obsidian_1.8.9_amd64.deb
 https://github.com/wagoodman/dive/releases/download/v0.13.1/dive_0.13.1_linux_amd64.deb
