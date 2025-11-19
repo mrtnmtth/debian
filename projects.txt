@@ -1,0 +1,4 @@
+obsidianmd/obsidian-releases
+derailed/k9s
+getsops/sops
+wagoodman/dive

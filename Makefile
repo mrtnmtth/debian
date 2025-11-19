@@ -4,7 +4,7 @@ REPO_DIR = repo
 
 .PHONY: all clean repo
 
-all: download repo
+all: fetch download repo
 
 repo:
 	mkdir -p $(REPO_DIR)
@@ -16,6 +16,9 @@ repo:
 download:
 	mkdir -p $(DL_DIR)
 	cd $(DL_DIR) && cat ../packages.txt | xargs -n 1 wget -nc
+
+fetch:
+	scripts/fetch-packages.sh
 
 clean:
 	rm -rf $(DL_DIR)
