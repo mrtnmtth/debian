@@ -14,8 +14,18 @@ repo:
 	cd $(REPO_DIR) && dpkg-scanpackages --multiversion . /dev/null | gzip -9c > Packages.gz
 
 download:
-	mkdir -p $(DL_DIR)
-	cd $(DL_DIR) && cat ../packages.txt | xargs -n 1 wget -nc
+	@mkdir -p $(DL_DIR)
+	@while read -r url; do \
+		filename=$$(basename "$$url"); \
+		version=$$(echo "$$url" | rev | cut -d'/' -f2 | rev); \
+		cached="$${filename%.deb}_$${version}.deb"; \
+		if [ ! -f "$(DL_DIR)/$$cached" ]; then \
+			echo "Downloading $$filename version $$version..."; \
+			wget -q -O "$(DL_DIR)/$$cached" "$$url"; \
+		else \
+			echo "File $$cached already exists in $(DL_DIR), skipping."; \
+		fi; \
+	done < packages.txt
 
 fetch:
 	scripts/fetch-packages.sh

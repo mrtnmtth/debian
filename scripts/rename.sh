@@ -1,18 +1,14 @@
 #!/bin/bash
 
 rename_deb_file() {
-  local file
-  local dir
-  local package_name
-  local version
-  local architecture
-  local new_file
+  local file="$1"
+  local dir info package_name version architecture new_file
 
-  file="$1"
   dir=$(dirname "$file")
-  package_name=$(dpkg-deb --info "$file" | grep "Package:" | awk '{print $2}')
-  version=$(dpkg-deb --info "$file" | grep "Version:" | awk '{print $2}')
-  architecture=$(dpkg-deb --info "$file" | grep "Architecture:" | awk '{print $2}')
+  info=$(dpkg-deb --info "$file")
+  package_name=$(echo "$info" | grep "Package:" | awk '{print $2}')
+  version=$(echo "$info" | grep "Version:" | awk '{print $2}')
+  architecture=$(echo "$info" | grep "Architecture:" | awk '{print $2}')
   new_file="${dir}/${package_name}_${version}_${architecture}.deb"
 
   if [ "$file" != "$new_file" ]; then
