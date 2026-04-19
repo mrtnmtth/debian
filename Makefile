@@ -7,9 +7,8 @@ REPO_DIR = repo
 all: fetch download repo
 
 repo:
-	mkdir -p $(REPO_DIR)
-	cp $(DEBS_DIR)/*.deb $(REPO_DIR)/
-	cp $(DL_DIR)/*.deb $(REPO_DIR)/
+	mkdir -p $(REPO_DIR) $(DEBS_DIR) $(DL_DIR)
+	find $(DEBS_DIR) $(DL_DIR) -maxdepth 1 -name '*.deb' -exec cp {} $(REPO_DIR)/ \;
 	./scripts/rename.sh $(REPO_DIR)
 	cd $(REPO_DIR) && dpkg-scanpackages --multiversion . /dev/null | gzip -9c > Packages.gz
 
