@@ -44,10 +44,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain packages.txt repo)" ]; then
-            git add packages.txt repo
-            git commit -m "Update packages & repository"
-            git push
-          else
+
+          if [ -z "$(git status --porcelain packages.txt repo)" ]; then
             echo "No changes."
+            exit 0
           fi
+
+          msg=$(scripts/commit-message.sh)
+          git add packages.txt repo
+          git commit -m "$msg"
+          git push
