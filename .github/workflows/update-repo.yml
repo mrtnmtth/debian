@@ -1,0 +1,53 @@
+name: Update repository
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-repo
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+          fetch-depth: 1
+
+      - name: Install dpkg-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+
+      - name: Cache downloaded .deb files
+        uses: actions/cache@v4
+        with:
+          path: dl
+          key: dl-${{ hashFiles('packages.txt') }}
+          restore-keys: |
+            dl-
+
+      - name: Build repository
+        run: make
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain packages.txt repo)" ]; then
+            git add packages.txt repo
+            git commit -m "Update packages & repository"
+            git push
+          else
+            echo "No changes."
+          fi
