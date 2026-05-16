@@ -2,7 +2,7 @@ name: Update repository
 
 on:
   schedule:
-    - cron: "17 3 * * *"
+    - cron: "17 3 * * 1,4"
   workflow_dispatch:
 
 permissions:
