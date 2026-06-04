@@ -17,7 +17,12 @@ download:
 	@while read -r url; do \
 		filename=$$(basename "$$url"); \
 		version=$$(echo "$$url" | rev | cut -d'/' -f2 | rev); \
-		cached="$${filename%.deb}_$${version}.deb"; \
+		base="$${filename%.deb}"; \
+		version_no_v="$${version#v}"; \
+		case "$$base" in \
+			*"$$version"*|*"$$version_no_v"*) cached="$$filename" ;; \
+			*) cached="$${base}_$${version}.deb" ;; \
+		esac; \
 		if [ ! -f "$(DL_DIR)/$$cached" ]; then \
 			echo "Downloading $$filename version $$version..."; \
 			wget -q -O "$(DL_DIR)/$$cached" "$$url"; \
