@@ -1,6 +1,7 @@
 https://github.com/derailed/k9s/releases/download/v0.50.16/k9s_linux_amd64.deb
 https://github.com/derailed/k9s/releases/download/v0.50.18/k9s_linux_amd64.deb
 https://github.com/derailed/k9s/releases/download/v0.50.6/k9s_linux_amd64.deb
+https://github.com/derailed/k9s/releases/download/v0.51.0/k9s_linux_amd64.deb
 https://github.com/getsops/sops/releases/download/v3.10.1/sops_3.10.1_amd64.deb
 https://github.com/getsops/sops/releases/download/v3.11.0/sops_3.11.0_amd64.deb
 https://github.com/getsops/sops/releases/download/v3.12.2/sops_3.12.2_amd64.deb
