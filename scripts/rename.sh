@@ -20,17 +20,16 @@ rename_deb_file() {
   new_file="${dir}/${new_base}"
 
   if [[ "$file" != "$new_file" ]]; then
-    if [[ -e "$new_file" ]]; then
-      if cmp -s "$file" "$new_file"; then
-        rm "$file"
-        echo "Removed duplicate $file (same as $new_file)"
-      else
-        echo "Skipping $file -> $new_file (target exists)"
-      fi
-    else
-      mv "$file" "$new_file"
-      echo "Renamed $file to $new_file"
-    fi
+    # Always move onto the canonical name, replacing any existing target.
+    # "package_version_arch" uniquely identifies the build, so a pre-existing
+    # target is the same version. We overwrite instead of comparing contents:
+    # under `actions/checkout` with `lfs: false` the committed file on disk is a
+    # Git LFS pointer, not the real .deb, so a content comparison would always
+    # (wrongly) report a difference and leave a duplicate behind. When the
+    # content is genuinely identical, Git/LFS sees the same object and nothing
+    # is re-committed.
+    mv -f "$file" "$new_file"
+    echo "Renamed $file to $new_file"
   fi
 }
 

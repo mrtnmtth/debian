@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: update-repo
@@ -15,10 +17,18 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # lfs: false on purpose. The build never needs the *contents* of the
+          # already-committed .deb files: it re-downloads every package into dl/
+          # (cached) and rebuilds repo/ from those. Pulling LFS here would
+          # download the whole repo (hundreds of MB) on every run and burn the
+          # limited LFS bandwidth quota.
           lfs: false
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
@@ -41,12 +51,14 @@ jobs:
         run: make
 
       - name: Commit and push changes
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           if [ -z "$(git status --porcelain packages.txt repo)" ]; then
             echo "No changes."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -54,3 +66,32 @@ jobs:
           git add packages.txt repo
           git commit -m "$msg"
           git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # Deploy the freshly built apt repo straight from this workspace, which
+      # already holds the real .deb files produced by `make`. Deploying from a
+      # separate job/workflow would require another checkout that pulls every
+      # .deb back out of LFS. Only repo/ is published (apt URI is .../debian/repo/),
+      # which also keeps dl/ and .git out of the Pages artifact. Runs only when
+      # the repository actually changed, or on a manual dispatch.
+      - name: Stage Pages content
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          mkdir -p _site/repo
+          cp -a repo/. _site/repo/
+          cp -a README.md _site/ 2>/dev/null || true
+
+      - name: Setup Pages
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/deploy-pages@v4
