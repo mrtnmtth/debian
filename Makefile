@@ -8,13 +8,15 @@ all: fetch download repo
 
 repo:
 	mkdir -p $(REPO_DIR) $(DEBS_DIR) $(DL_DIR)
+	rm -f $(REPO_DIR)/*.deb
 	find $(DEBS_DIR) $(DL_DIR) -maxdepth 1 -name '*.deb' -exec cp {} $(REPO_DIR)/ \;
 	./scripts/rename.sh $(REPO_DIR)
 	cd $(REPO_DIR) && dpkg-scanpackages --multiversion . /dev/null | gzip -9c > Packages.gz
 
 download:
 	@mkdir -p $(DL_DIR)
-	@while read -r url; do \
+	@expected=""; \
+	while read -r url; do \
 		filename=$$(basename "$$url"); \
 		version=$$(echo "$$url" | rev | cut -d'/' -f2 | rev); \
 		base="$${filename%.deb}"; \
@@ -23,13 +25,22 @@ download:
 			*"$$version"*|*"$$version_no_v"*) cached="$$filename" ;; \
 			*) cached="$${base}_$${version}.deb" ;; \
 		esac; \
+		expected="$$expected $$cached"; \
 		if [ ! -f "$(DL_DIR)/$$cached" ]; then \
 			echo "Downloading $$filename version $$version..."; \
 			wget -q -O "$(DL_DIR)/$$cached" "$$url"; \
 		else \
 			echo "File $$cached already exists in $(DL_DIR), skipping."; \
 		fi; \
-	done < packages.txt
+	done < packages.txt; \
+	for f in $(DL_DIR)/*.deb; do \
+		[ -e "$$f" ] || continue; \
+		name=$$(basename "$$f"); \
+		case " $$expected " in \
+			*" $$name "*) ;; \
+			*) echo "Pruning $$name (no longer in packages.txt)"; rm -f "$$f" ;; \
+		esac; \
+	done
 
 fetch:
 	scripts/fetch-packages.sh
