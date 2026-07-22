@@ -1,8 +1,8 @@
 #!/bin/bash
-# Download direct-URL .deb packages listed in urls.txt into the download
-# cache using wget timestamping (-N), and regenerate urls.lock with one
+# Download direct-URL .deb packages listed in direct-urls.txt into the download
+# cache using wget timestamping (-N), and regenerate direct-packages.lock with one
 # "<package> <version>" line per package. The URLs are stable "latest"
-# pointers that never change, so urls.lock is the change-detection signal
+# pointers that never change, so direct-packages.lock is the change-detection signal
 # for CI (deploy gating, cache key, commit messages).
 # Usage:
 #   scripts/download-direct.sh [dl-dir]
@@ -13,7 +13,7 @@ DL_DIR="${1:-dl}"
 mkdir -p "$DL_DIR"
 
 entries=()
-if [ -f urls.txt ]; then
+if [ -f direct-urls.txt ]; then
   while IFS= read -r url; do
     [ -n "$url" ] || continue
     case "$url" in \#*) continue ;; esac
@@ -27,11 +27,11 @@ if [ -f urls.txt ]; then
       exit 1
     fi
     entries+=("$(dpkg-deb -f "$file" Package) $(dpkg-deb -f "$file" Version)")
-  done < urls.txt
+  done < direct-urls.txt
 fi
 
 if [ ${#entries[@]} -gt 0 ]; then
-  printf '%s\n' "${entries[@]}" | sort > urls.lock
+  printf '%s\n' "${entries[@]}" | sort > direct-packages.lock
 else
-  : > urls.lock
+  : > direct-packages.lock
 fi

@@ -24,8 +24,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # The .deb files are not stored in git; only packages.txt and
-          # urls.lock are tracked. The build re-downloads every package into
+          # The .deb files are not stored in git; only github-packages.lock and
+          # direct-packages.lock are tracked. The build re-downloads every package into
           # dl/ (cached) and rebuilds repo/ from those, and the result is
           # published via GitHub Pages.
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -38,14 +38,14 @@ jobs:
           sudo apt-get install -y dpkg-dev
 
       # Restore/save are split so the cache is saved with a key that reflects
-      # the urls.lock produced by this run's build; the combined actions/cache
+      # the direct-packages.lock produced by this run's build; the combined actions/cache
       # fixes the key at restore time, which would re-download a new direct
       # .deb (e.g. keybase, ~150 MB) once more on the following run.
       - name: Restore downloaded .deb cache
         uses: actions/cache/restore@v4
         with:
           path: dl
-          key: dl-${{ hashFiles('packages.txt', 'urls.lock') }}
+          key: dl-${{ hashFiles('github-packages.lock', 'direct-packages.lock') }}
           restore-keys: |
             dl-
 
@@ -58,23 +58,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Package versions are pinned in packages.txt and urls.lock, so a
+          # Package versions are pinned in github-packages.lock and direct-packages.lock, so a
           # change to either is exactly when the built repo/ output changes.
-          if [ -z "$(git status --porcelain packages.txt urls.lock)" ]; then
+          if [ -z "$(git status --porcelain github-packages.lock direct-packages.lock)" ]; then
             echo "No changes."
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           msg=$(scripts/commit-message.sh)
-          git add packages.txt urls.lock
+          git add github-packages.lock direct-packages.lock
           git commit -m "$msg"
           git push
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
       # Deploy the freshly built apt repo straight from this workspace, which
       # holds the real .deb files produced by `make` — git only tracks
-      # packages.txt, so the Pages deployment is the sole store of the built
+      # github-packages.lock, so the Pages deployment is the sole store of the built
       # repo. Only repo/ is published (apt URI is .../debian/repo/), which
       # also keeps dl/ and .git out of the Pages artifact. Runs only when
       # the repository actually changed, or on a manual dispatch.
@@ -100,11 +100,11 @@ jobs:
         if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/deploy-pages@v4
 
-      # hashFiles here sees the urls.lock updated by the build. Saving an
+      # hashFiles here sees the direct-packages.lock updated by the build. Saving an
       # already-existing key (the no-change case) just logs a warning.
       - name: Save downloaded .deb cache
         if: always()
         uses: actions/cache/save@v4
         with:
           path: dl
-          key: dl-${{ hashFiles('packages.txt', 'urls.lock') }}
+          key: dl-${{ hashFiles('github-packages.lock', 'direct-packages.lock') }}

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Check if the file exists
-if [ ! -f projects.txt ]; then
-  echo "File projects.txt not found!"
+if [ ! -f github-projects.txt ]; then
+  echo "File github-projects.txt not found!"
   exit 1
 fi
 
@@ -35,20 +35,20 @@ while IFS= read -r line; do
       url=$(jq -r '.assets[]? | select(.name | test("amd64\\.deb")) | .browser_download_url' <<< "$body")
     fi
 
-    # If the URL is not empty add it to packages.txt (if it doesn't already exist)
+    # If the URL is not empty add it to github-packages.lock (if it doesn't already exist)
     if [ -n "$url" ]; then
-      if ! grep -q "$url" packages.txt; then
-        echo "$url" >> packages.txt
-        echo "Added $url to packages.txt"
+      if ! grep -q "$url" github-packages.lock; then
+        echo "$url" >> github-packages.lock
+        echo "Added $url to github-packages.lock"
       else
-        echo "$url already exists in packages.txt"
+        echo "$url already exists in github-packages.lock"
       fi
     else
       echo "No amd64.deb package found for $repo_name"
     fi
 
   fi
-done < projects.txt
+done < github-projects.txt
 
-# Sort entries in packages.txt alphabetically
-sort -o packages.txt packages.txt
+# Sort entries in github-packages.lock alphabetically
+sort -o github-packages.lock github-packages.lock

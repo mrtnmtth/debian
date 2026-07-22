@@ -14,44 +14,11 @@ repo:
 	cd $(REPO_DIR) && dpkg-scanpackages --multiversion . /dev/null | gzip -9c > Packages.gz
 
 download:
-	@mkdir -p $(DL_DIR)
+	@./scripts/download-github.sh $(DL_DIR)
 	@./scripts/download-direct.sh $(DL_DIR)
-	@expected=""; \
-	while read -r url; do \
-		filename=$$(basename "$$url"); \
-		version=$$(echo "$$url" | rev | cut -d'/' -f2 | rev); \
-		base="$${filename%.deb}"; \
-		version_no_v="$${version#v}"; \
-		case "$$base" in \
-			*"$$version"*|*"$$version_no_v"*) cached="$$filename" ;; \
-			*) cached="$${base}_$${version}.deb" ;; \
-		esac; \
-		expected="$$expected $$cached"; \
-		if [ ! -f "$(DL_DIR)/$$cached" ]; then \
-			echo "Downloading $$filename version $$version..."; \
-			wget -q -O "$(DL_DIR)/$$cached" "$$url"; \
-		else \
-			echo "File $$cached already exists in $(DL_DIR), skipping."; \
-		fi; \
-	done < packages.txt; \
-	if [ -f urls.txt ]; then \
-		while read -r url; do \
-			[ -n "$$url" ] || continue; \
-			case "$$url" in \#*) continue ;; esac; \
-			expected="$$expected $$(basename "$$url")"; \
-		done < urls.txt; \
-	fi; \
-	for f in $(DL_DIR)/*.deb; do \
-		[ -e "$$f" ] || continue; \
-		name=$$(basename "$$f"); \
-		case " $$expected " in \
-			*" $$name "*) ;; \
-			*) echo "Pruning $$name (no longer in packages.txt or urls.txt)"; rm -f "$$f" ;; \
-		esac; \
-	done
 
 fetch:
-	scripts/fetch-packages.sh
+	scripts/fetch-github.sh
 
 clean:
 	rm -rf $(DL_DIR)
