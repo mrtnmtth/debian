@@ -15,6 +15,7 @@ repo:
 
 download:
 	@mkdir -p $(DL_DIR)
+	@./scripts/download-direct.sh $(DL_DIR)
 	@expected=""; \
 	while read -r url; do \
 		filename=$$(basename "$$url"); \
@@ -33,12 +34,19 @@ download:
 			echo "File $$cached already exists in $(DL_DIR), skipping."; \
 		fi; \
 	done < packages.txt; \
+	if [ -f urls.txt ]; then \
+		while read -r url; do \
+			[ -n "$$url" ] || continue; \
+			case "$$url" in \#*) continue ;; esac; \
+			expected="$$expected $$(basename "$$url")"; \
+		done < urls.txt; \
+	fi; \
 	for f in $(DL_DIR)/*.deb; do \
 		[ -e "$$f" ] || continue; \
 		name=$$(basename "$$f"); \
 		case " $$expected " in \
 			*" $$name "*) ;; \
-			*) echo "Pruning $$name (no longer in packages.txt)"; rm -f "$$f" ;; \
+			*) echo "Pruning $$name (no longer in packages.txt or urls.txt)"; rm -f "$$f" ;; \
 		esac; \
 	done
 

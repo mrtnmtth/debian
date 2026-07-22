@@ -16,6 +16,8 @@ Trusted: yes" | sudo tee /etc/apt/sources.list.d/mmtth.sources
 ## Adding packages to the repository
 
 1. Clone this repository.
-2. Put the links to your deb files in the `packages.txt` file.
+2. For GitHub-hosted packages, add the `owner/repo` slug to `projects.txt`
+   (or pin a release URL directly in `packages.txt`). For packages served
+   from a stable direct URL (e.g. Keybase), add the .deb URL to `urls.txt`.
 3. Run `make` to generate the repository.
 4. The repository will be generated in the `repo` directory.

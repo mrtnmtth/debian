@@ -24,9 +24,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # The .deb files are not stored in git; only packages.txt is tracked.
-          # The build re-downloads every package into dl/ (cached) and rebuilds
-          # repo/ from those, and the result is published via GitHub Pages.
+          # The .deb files are not stored in git; only packages.txt and
+          # urls.lock are tracked. The build re-downloads every package into
+          # dl/ (cached) and rebuilds repo/ from those, and the result is
+          # published via GitHub Pages.
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
           fetch-depth: 1
@@ -36,11 +37,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y dpkg-dev
 
-      - name: Cache downloaded .deb files
-        uses: actions/cache@v4
+      # Restore/save are split so the cache is saved with a key that reflects
+      # the urls.lock produced by this run's build; the combined actions/cache
+      # fixes the key at restore time, which would re-download a new direct
+      # .deb (e.g. keybase, ~150 MB) once more on the following run.
+      - name: Restore downloaded .deb cache
+        uses: actions/cache/restore@v4
         with:
           path: dl
-          key: dl-${{ hashFiles('packages.txt') }}
+          key: dl-${{ hashFiles('packages.txt', 'urls.lock') }}
           restore-keys: |
             dl-
 
@@ -53,16 +58,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Package versions are pinned in packages.txt, so a changed
-          # packages.txt is exactly when the built repo/ output changes.
-          if [ -z "$(git status --porcelain packages.txt)" ]; then
+          # Package versions are pinned in packages.txt and urls.lock, so a
+          # change to either is exactly when the built repo/ output changes.
+          if [ -z "$(git status --porcelain packages.txt urls.lock)" ]; then
             echo "No changes."
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           msg=$(scripts/commit-message.sh)
-          git add packages.txt
+          git add packages.txt urls.lock
           git commit -m "$msg"
           git push
           echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -94,3 +99,12 @@ jobs:
         id: deployment
         if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/deploy-pages@v4
+
+      # hashFiles here sees the urls.lock updated by the build. Saving an
+      # already-existing key (the no-change case) just logs a warning.
+      - name: Save downloaded .deb cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: dl
+          key: dl-${{ hashFiles('packages.txt', 'urls.lock') }}

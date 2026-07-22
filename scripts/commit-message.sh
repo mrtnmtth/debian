@@ -1,5 +1,6 @@
 #!/bin/bash
-# Print a commit message describing newly added entries in packages.txt.
+# Print a commit message describing newly added entries in packages.txt
+# and updated direct-download packages in urls.lock.
 # Reads the diff of the current working tree against HEAD, so it works
 # equally well in CI and locally (before staging).
 # Usage:
@@ -12,6 +13,12 @@ while IFS= read -r url; do
   [ -z "$url" ] && continue
   added+=("$(echo "$url" | awk -F'/' '{print $5, $8}')")
 done < <(git diff HEAD -- packages.txt | grep '^+' | grep -v '^+++' | sed 's/^+//')
+
+# urls.lock lines are already "<package> <version>".
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  added+=("$line")
+done < <(git diff HEAD -- urls.lock | grep '^+' | grep -v '^+++' | sed 's/^+//')
 
 if [ ${#added[@]} -eq 0 ]; then
   echo "Update packages & repository"
