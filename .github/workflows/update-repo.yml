@@ -1,6 +1,13 @@
 name: Update repository
 
 on:
+  push:
+    branches: [master]
+    paths:
+      - direct-urls.txt
+      - github-projects.txt
+      - direct-packages.lock
+      - github-packages.lock
   schedule:
     - cron: "17 3 * * 1,4"
   workflow_dispatch:
@@ -79,25 +86,25 @@ jobs:
       # also keeps dl/ and .git out of the Pages artifact. Runs only when
       # the repository actually changed, or on a manual dispatch.
       - name: Stage Pages content
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: |
           mkdir -p _site/repo
           cp -a repo/. _site/repo/
           cp -a README.md _site/ 2>/dev/null || true
 
       - name: Setup Pages
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         uses: actions/deploy-pages@v4
 
       # hashFiles here sees the direct-packages.lock updated by the build. Saving an
