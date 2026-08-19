@@ -11,6 +11,7 @@ repo:
 	rm -f $(REPO_DIR)/*.deb
 	find $(DEBS_DIR) $(DL_DIR) -maxdepth 1 -name '*.deb' -exec cp {} $(REPO_DIR)/ \;
 	./scripts/rename.sh $(REPO_DIR)
+	./scripts/prune-versions.sh $(REPO_DIR) 2
 	cd $(REPO_DIR) && dpkg-scanpackages --multiversion . /dev/null | gzip -9c > Packages.gz
 
 download:

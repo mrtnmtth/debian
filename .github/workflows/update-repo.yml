@@ -59,53 +59,66 @@ jobs:
       - name: Build repository
         run: make
 
-      - name: Commit and push changes
-        id: commit
+      # Detect whether the build changed any package version, but DO NOT commit
+      # yet. Package versions are pinned in github-packages.lock and
+      # direct-packages.lock, so a change to either (produced by `make` above) is
+      # exactly when the built repo/ output changed. The commit is deferred until
+      # after a successful Pages deploy (see "Commit and push changes" below) so
+      # that a failed deploy leaves git untouched and the next run retries —
+      # committing here would make `changed` false on the retry and skip the deploy.
+      - name: Detect package changes
+        id: detect
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Package versions are pinned in github-packages.lock and direct-packages.lock, so a
-          # change to either is exactly when the built repo/ output changes.
           if [ -z "$(git status --porcelain github-packages.lock direct-packages.lock)" ]; then
             echo "No changes."
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-
-          msg=$(scripts/commit-message.sh)
-          git add github-packages.lock direct-packages.lock
-          git commit -m "$msg"
-          git push
-          echo "changed=true" >> "$GITHUB_OUTPUT"
 
       # Deploy the freshly built apt repo straight from this workspace, which
       # holds the real .deb files produced by `make` — git only tracks
       # github-packages.lock, so the Pages deployment is the sole store of the built
       # repo. Only repo/ is published (apt URI is .../debian/repo/), which
-      # also keeps dl/ and .git out of the Pages artifact. Runs only when
-      # the repository actually changed, or on a manual dispatch.
+      # also keeps dl/ and .git out of the Pages artifact. Runs when the
+      # repository actually changed, on a manual dispatch, or on a push to the
+      # package-input files.
       - name: Stage Pages content
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: steps.detect.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: |
           mkdir -p _site/repo
           cp -a repo/. _site/repo/
           cp -a README.md _site/ 2>/dev/null || true
 
       - name: Setup Pages
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: steps.detect.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: steps.detect.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: steps.detect.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         uses: actions/deploy-pages@v4
+
+      # Commit the updated lock files only after Pages has been deployed. The
+      # explicit success() means a failed deploy above skips this step, leaving
+      # git unchanged so the next run still sees the change and retries the
+      # deploy — instead of the commit landing first and the stuck deploy being
+      # skipped forever (changed would be false).
+      - name: Commit and push changes
+        if: success() && steps.detect.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          msg=$(scripts/commit-message.sh)
+          git add github-packages.lock direct-packages.lock
+          git commit -m "$msg"
+          git push
 
       # hashFiles here sees the direct-packages.lock updated by the build. Saving an
       # already-existing key (the no-change case) just logs a warning.
